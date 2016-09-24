@@ -69,14 +69,15 @@ namespace LiteNetLib
         /// Disconnect peer from server
         /// </summary>
         /// <param name="peer">peer to disconnect</param>
-        public void DisconnectPeer(NetPeer peer)
+        public void DisconnectPeer(NetPeer peer, byte disconnectCode = 0)
         {
             if (peer != null && _peers.ContainsKey(peer.EndPoint))
             {
-                peer.CreateAndSend(PacketProperty.Disconnect);
+                peer.SendDisconnect(disconnectCode);
                 var netEvent = CreateEvent(NetEventType.Disconnect);
                 netEvent.Peer = peer;
                 netEvent.DisconnectReason = DisconnectReason.DisconnectPeerCalled;
+                netEvent.AdditionalData = disconnectCode;
                 EnqueueEvent(netEvent);
                 RemovePeer(peer);
             }
@@ -84,13 +85,26 @@ namespace LiteNetLib
 
         public override void Stop()
         {
+            DisconnectAllPeers(0);
+            base.Stop();
+        }
+
+        public void Stop(byte disconnectCode)
+        {
+            DisconnectAllPeers(disconnectCode);
+            base.Stop();
+        }
+
+        private void DisconnectAllPeers(byte disconnectCode)
+        {
             lock (_peers)
-            foreach (NetPeer netPeer in _peers.Values)
             {
-                netPeer.CreateAndSend(PacketProperty.Disconnect);
+              foreach (NetPeer netPeer in _peers.Values)
+              {
+                netPeer.SendDisconnect(disconnectCode);
+              }
             }
             ClearPeers();
-            base.Stop();
         }
 
         private void ClearPeers()

@@ -240,6 +240,13 @@ namespace LiteNetLib
             SendPacket(packet);
         }
 
+        internal void SendDisconnect(byte disconnectCode)
+        {
+            NetPacket packet = GetPacketFromPool(PacketProperty.Disconnect, 1);
+            packet.RawData[1] = disconnectCode;
+            SendPacket(packet);
+        }
+
         //from user thread, our thread, or recv?
         private void SendPacket(NetPacket packet)
         {

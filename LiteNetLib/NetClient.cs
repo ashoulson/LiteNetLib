@@ -274,8 +274,9 @@ namespace LiteNetLib
 
             if (packet.Property == PacketProperty.Disconnect)
             {
-                NetUtils.DebugWrite(ConsoleColor.Cyan, "[NC] Received disconnection");
-                CloseConnection(true, DisconnectReason.RemoteConnectionClose, 0);
+                byte reason = packet.RawData[1];
+                NetUtils.DebugWrite(ConsoleColor.Cyan, "[NC] Received disconnection, code: " + reason);
+                CloseConnection(true, DisconnectReason.RemoteConnectionClose, reason);
                 return;
             }
 
