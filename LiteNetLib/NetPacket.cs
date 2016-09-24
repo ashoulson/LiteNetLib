@@ -15,20 +15,21 @@ namespace LiteNetLib
         Pong,                   //7
         ConnectRequest,         //8
         ConnectAccept,          //9
-        Disconnect,             //10
-        UnconnectedMessage,     //11
-        NatIntroductionRequest, //12
-        NatIntroduction,        //13
-        NatPunchMessage,        //14
-        MtuCheck,               //15
-        MtuOk,                  //16
-        DiscoveryRequest,       //17
-        DiscoveryResponse       //18
+        ConnectReject,          //10
+        Disconnect,             //11
+        UnconnectedMessage,     //12
+        NatIntroductionRequest, //13
+        NatIntroduction,        //14
+        NatPunchMessage,        //15
+        MtuCheck,               //16
+        MtuOk,                  //17
+        DiscoveryRequest,       //18
+        DiscoveryResponse       //19
     }
 
     internal sealed class NetPacket
     {
-        private const int LastProperty = 18;
+        private const int LastProperty = 19;
 
         //Header
         public PacketProperty Property

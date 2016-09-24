@@ -45,7 +45,7 @@ namespace LiteNetLib
             get { return _connected; }
         }
 
-        private void CloseConnection(bool force, DisconnectReason reason, int socketErrorCode)
+        private void CloseConnection(bool force, DisconnectReason reason, int additionalData)
         {
             lock (_connectionCloseLock)
             {
@@ -75,7 +75,7 @@ namespace LiteNetLib
                 //Send event to Listener
                 var netEvent = CreateEvent(NetEventType.Disconnect);
                 netEvent.DisconnectReason = reason;
-                netEvent.AdditionalData = socketErrorCode;
+                netEvent.AdditionalData = additionalData;
                 EnqueueEvent(netEvent);
             }
         }
@@ -229,6 +229,8 @@ namespace LiteNetLib
                 if (peerKey != _connectKey)
                 {
                     NetUtils.DebugWrite(ConsoleColor.Cyan, "[NC] Peer connect reject. Invalid key: " + peerKey);
+                    SendRejectPeer(packet, remoteEndPoint, ConnectRejectReason.BadConnectKey);
+
                     return;
                 }
 
@@ -274,6 +276,14 @@ namespace LiteNetLib
             {
                 NetUtils.DebugWrite(ConsoleColor.Cyan, "[NC] Received disconnection");
                 CloseConnection(true, DisconnectReason.RemoteConnectionClose, 0);
+                return;
+            }
+
+            if (packet.Property == PacketProperty.ConnectReject)
+            {
+                ConnectRejectReason reason = (ConnectRejectReason)packet.RawData[9];
+                NetUtils.DebugWrite(ConsoleColor.Cyan, "[NC] Connection rejected: " + reason);
+                CloseConnection(true, DisconnectReason.ConnectionRejected, (int)reason);
                 return;
             }
 

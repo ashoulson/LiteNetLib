@@ -251,12 +251,22 @@ namespace LiteNetLib
                 return;
             }
 
-            if (_peers.Count < _maxClients && packet.Property == PacketProperty.ConnectRequest)
+            if (packet.Property == PacketProperty.ConnectRequest)
             {
+                if (_peers.Count >= _maxClients)
+                {
+                    NetUtils.DebugWrite(ConsoleColor.Cyan, "[NS] Peer connect reject. Server full.");
+                    SendRejectPeer(packet, remoteEndPoint, ConnectRejectReason.ServerFull);
+
+                    return;
+                }
+
                 string peerKey = Encoding.UTF8.GetString(packet.RawData, 9, packet.RawData.Length - 9);
                 if (peerKey != _connectKey)
                 {
                     NetUtils.DebugWrite(ConsoleColor.Cyan, "[NS] Peer connect reject. Invalid key: " + peerKey);
+                    SendRejectPeer(packet, remoteEndPoint, ConnectRejectReason.BadConnectKey);
+
                     return;
                 }
 

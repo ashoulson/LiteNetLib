@@ -310,6 +310,18 @@ namespace LiteNetLib
             return result;
         }
 
+        internal void SendRejectPeer(NetPacket incomingPacket, NetEndPoint remoteEndPoint, ConnectRejectReason rejectReason)
+        {
+            var rejectPacket = NetPacket.CreateRawPacket(PacketProperty.ConnectReject, 9);
+            Buffer.BlockCopy(incomingPacket.RawData, 1, rejectPacket, 1, 8);
+            rejectPacket[9] = (byte)rejectReason;
+
+            SendRaw(rejectPacket, remoteEndPoint);
+
+            //Note that this packet will leak because we have no peer pool to put it into
+            return;
+        }
+
         /// <summary>
         /// Stop updating thread and listening
         /// </summary>

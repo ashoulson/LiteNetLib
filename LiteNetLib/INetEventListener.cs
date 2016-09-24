@@ -14,10 +14,18 @@ namespace LiteNetLib
         StopCalled,
         SocketReceiveError,
         ConnectionFailed,
+        ConnectionRejected,
         Timeout,
         SocketSendError,
         RemoteConnectionClose,
-        DisconnectPeerCalled
+        DisconnectPeerCalled,
+    }
+
+    public enum ConnectRejectReason : byte
+    {
+        Unknown,         //0
+        BadConnectKey,   //1
+        ServerFull,      //2
     }
 
     public interface INetEventListener
