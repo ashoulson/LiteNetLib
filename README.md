@@ -4,7 +4,7 @@ Lite reliable UDP library for .NET and Mono.
 Minimal .NET version - 3.5
 
 ### Build status
-[![](https://ci.appveyor.com/api/projects/status/354501wnvxs8kuh3/branch/master?svg=true)](https://ci.appveyor.com/project/RevenantX/litenetlib/branch/master)
+[![](https://ci.appveyor.com/api/projects/status/qefrmogwuqyf5ki3/branch/master?svg=true)](https://ci.appveyor.com/project/ashoulson/litenetlib/branch/master)
 
 ## Features
 
