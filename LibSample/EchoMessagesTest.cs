@@ -80,6 +80,16 @@ namespace LibSample
             {
                 
             }
+
+            public void OnPeerAuthenticating(NetPeer peer, string authKey)
+            {
+
+            }
+
+            public void OnNetworkReject(NetEndPoint remoteEndPoint, ConnectRejectReason reason)
+            {
+
+            }
         }
 
         private class ServerListener : INetEventListener
@@ -124,6 +134,16 @@ namespace LibSample
             }
 
             public void OnNetworkLatencyUpdate(NetPeer peer, int latency)
+            {
+
+            }
+
+            public void OnPeerAuthenticating(NetPeer peer, string authKey)
+            {
+
+            }
+
+            public void OnNetworkReject(NetEndPoint remoteEndPoint, ConnectRejectReason reason)
             {
 
             }

@@ -77,4 +77,14 @@ public class GameServer : MonoBehaviour, INetEventListener
     {
         
     }
+	
+	public void OnPeerAuthenticating(NetPeer peer, string authKey)
+	{
+
+	}
+
+	public void OnNetworkReject(NetEndPoint remoteEndPoint, ConnectRejectReason reason)
+	{
+
+	}
 }

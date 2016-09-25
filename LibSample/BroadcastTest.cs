@@ -21,6 +21,11 @@ namespace LibSample
                 Console.WriteLine("[Client] disconnected: " + disconnectReason);
             }
 
+            public void OnPeerAuthenticating(NetPeer peer, string authKey)
+            {
+
+            }
+
             public void OnNetworkError(NetEndPoint endPoint, int error)
             {
                 Console.WriteLine("[Client] error! " + error);
@@ -41,6 +46,11 @@ namespace LibSample
             }
 
             public void OnNetworkLatencyUpdate(NetPeer peer, int latency)
+            {
+
+            }
+
+            public void OnNetworkReject(NetEndPoint remoteEndPoint, ConnectRejectReason reason)
             {
 
             }
@@ -65,6 +75,11 @@ namespace LibSample
                 Console.WriteLine("[Server] Peer disconnected: " + peer.EndPoint + ", reason: " + disconnectReason);
             }
 
+            public void OnPeerAuthenticating(NetPeer peer, string authKey)
+            {
+
+            }
+
             public void OnNetworkError(NetEndPoint endPoint, int socketErrorCode)
             {
                 Console.WriteLine("[Server] error: " + socketErrorCode);
@@ -84,6 +99,11 @@ namespace LibSample
             }
 
             public void OnNetworkLatencyUpdate(NetPeer peer, int latency)
+            {
+
+            }
+
+            public void OnNetworkReject(NetEndPoint remoteEndPoint, ConnectRejectReason reason)
             {
 
             }
