@@ -270,19 +270,22 @@ namespace LiteNetLib
                 if (_peers.Count >= _maxClients)
                 {
                     NetUtils.DebugWrite(ConsoleColor.Cyan, "[NS] Peer connect reject. Server full.");
-                    SendRejectPeer(packet, remoteEndPoint, ConnectRejectReason.ServerFull);
+                    RejectPeer(packet, remoteEndPoint, ConnectRejectReason.ServerFull);
 
                     return;
                 }
 
-                string peerKey = Encoding.UTF8.GetString(packet.RawData, 9, packet.RawData.Length - 9);
-                if (peerKey != _connectKey)
+                string peerConnectKey = GetConnectKey(packet);
+                if (peerConnectKey != _connectKey)
                 {
-                    NetUtils.DebugWrite(ConsoleColor.Cyan, "[NS] Peer connect reject. Invalid key: " + peerKey);
-                    SendRejectPeer(packet, remoteEndPoint, ConnectRejectReason.BadConnectKey);
+                    NetUtils.DebugWrite(ConsoleColor.Cyan, "[NS] Peer connect reject. Invalid key: " + peerConnectKey);
+                    RejectPeer(packet, remoteEndPoint, ConnectRejectReason.BadConnectKey);
 
                     return;
                 }
+
+                //Getting auth key from peer
+                string peerAuthKey = GetAuthKey(packet);
 
                 //Getting new id for peer
                 netPeer = CreatePeer(remoteEndPoint);
@@ -290,7 +293,6 @@ namespace LiteNetLib
                 //response with id
                 ulong connectionId = BitConverter.ToUInt64(packet.RawData, 1);
                 NetUtils.DebugWrite(ConsoleColor.Cyan, "[NS] Received peer connect request Id: {0}, EP: {1}", connectionId, remoteEndPoint);
-
 
                 SendConnectAccept(netPeer, connectionId);
 
@@ -303,9 +305,19 @@ namespace LiteNetLib
                     _peerConnectionIds.Add(remoteEndPoint, connectionId);
                 }
 
-                var netEvent = CreateEvent(NetEventType.Connect);
-                netEvent.Peer = netPeer;
-                EnqueueEvent(netEvent);
+                //Send connect event
+                var connectEvent = CreateEvent(NetEventType.Connect);
+                connectEvent.Peer = netPeer;
+                EnqueueEvent(connectEvent);
+
+                //Send authenticate event if we got a key
+                if (peerAuthKey != null)
+                {
+                    var authenticateEvent = CreateEvent(NetEventType.Authenticate);
+                    authenticateEvent.Peer = netPeer;
+                    authenticateEvent.KeyData = peerAuthKey;
+                    EnqueueEvent(authenticateEvent);
+                }
             }
         }
 

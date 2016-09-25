@@ -16,6 +16,7 @@ namespace LiteNetLib
         public const int DefaultWindowSize = 64;
         public const ushort MaxSequence = 32768;
         public const ushort HalfMaxSequence = MaxSequence / 2;
+        public const int MaxConnectKeyBytes = 255;
 
         //socket
         public const string MulticastGroupIPv4 = "224.0.0.1";

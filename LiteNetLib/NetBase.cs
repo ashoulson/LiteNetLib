@@ -6,6 +6,7 @@ using Windows.System.Threading;
 #endif
 
 using System;
+using System.Text;
 using System.Collections.Generic;
 using System.Threading;
 using LiteNetLib.Utils;
@@ -26,8 +27,10 @@ namespace LiteNetLib
         {
             Connect,
             Disconnect,
+            Authenticate,
             Receive,
             ReceiveUnconnected,
+            Reject,
             Error,
             ConnectionLatencyUpdated,
             DiscoveryRequest,
@@ -41,6 +44,7 @@ namespace LiteNetLib
             public NetEventType Type;
             public NetEndPoint RemoteEndPoint;
             public int AdditionalData;
+            public string KeyData;
             public DisconnectReason DisconnectReason;
         }
 
@@ -310,15 +314,20 @@ namespace LiteNetLib
             return result;
         }
 
-        internal void SendRejectPeer(NetPacket incomingPacket, NetEndPoint remoteEndPoint, ConnectRejectReason rejectReason)
+        internal void RejectPeer(NetPacket incomingPacket, NetEndPoint remoteEndPoint, ConnectRejectReason rejectReason)
         {
             var rejectPacket = NetPacket.CreateRawPacket(PacketProperty.ConnectReject, 9);
             Buffer.BlockCopy(incomingPacket.RawData, 1, rejectPacket, 1, 8);
             rejectPacket[9] = (byte)rejectReason;
 
+            //Note that this packet will leak because we have no peer pool to put it into
             SendRaw(rejectPacket, remoteEndPoint);
 
-            //Note that this packet will leak because we have no peer pool to put it into
+            var netEvent = CreateEvent(NetEventType.Reject);
+            netEvent.RemoteEndPoint = remoteEndPoint;
+            netEvent.AdditionalData = (int)rejectReason;
+            EnqueueEvent(netEvent);
+
             return;
         }
 
@@ -399,11 +408,17 @@ namespace LiteNetLib
                 case NetEventType.Disconnect:
                     _netEventListener.OnPeerDisconnected(evt.Peer, evt.DisconnectReason, evt.AdditionalData);
                     break;
+                case NetEventType.Authenticate:
+                    _netEventListener.OnPeerAuthenticating(evt.Peer, evt.KeyData);
+                    break;
                 case NetEventType.Receive:
                     _netEventListener.OnNetworkReceive(evt.Peer, evt.DataReader);
                     break;
                 case NetEventType.ReceiveUnconnected:
                     _netEventListener.OnNetworkReceiveUnconnected(evt.RemoteEndPoint, evt.DataReader, UnconnectedMessageType.Default);
+                    break;
+                case NetEventType.Reject:
+                    _netEventListener.OnNetworkReject(evt.RemoteEndPoint, (ConnectRejectReason)evt.AdditionalData);
                     break;
                 case NetEventType.DiscoveryRequest:
                     _netEventListener.OnNetworkReceiveUnconnected(evt.RemoteEndPoint, evt.DataReader, UnconnectedMessageType.DiscoveryRequest);
@@ -424,6 +439,7 @@ namespace LiteNetLib
             evt.Peer = null;
             evt.AdditionalData = 0;
             evt.RemoteEndPoint = null;
+            evt.KeyData = null;
 
             lock (_netEventsPool)
             {
@@ -579,6 +595,53 @@ namespace LiteNetLib
 
             //other
             ReceiveFromSocket(reusableBuffer, count, remoteEndPoint);
+        }
+
+        internal byte[] PrepareConnectPacket(ulong connectId, string connectKey, string authKey)
+        {
+            //Get connect key bytes
+            byte[] keyData = Encoding.UTF8.GetBytes(connectKey);
+            if (keyData.Length > NetConstants.MaxConnectKeyBytes)
+                throw new Exception("Connect key too long: " + connectKey);
+
+            //Get auth key bytes
+            byte[] authData;
+            if (authKey != null)
+                authData = Encoding.UTF8.GetBytes(authKey);
+            else
+                authData = new byte[0];
+
+            //Make initial packet
+            int totalSize = 8 + 1 + keyData.Length + authData.Length;
+            var connectPacket = NetPacket.CreateRawPacket(PacketProperty.ConnectRequest, totalSize);
+
+            //Add id
+            FastBitConverter.GetBytes(connectPacket, 1, connectId);
+
+            //Add connect key
+            connectPacket[9] = (byte)keyData.Length;
+            Buffer.BlockCopy(keyData, 0, connectPacket, 10, keyData.Length);
+
+            //Add auth key
+            Buffer.BlockCopy(authData, 0, connectPacket, 10 + keyData.Length, authData.Length);
+
+            return connectPacket;
+        }
+
+        internal string GetConnectKey(NetPacket packet)
+        {
+            byte connectKeyLength = packet.RawData[9];
+            return Encoding.UTF8.GetString(packet.RawData, 10, connectKeyLength);
+        }
+
+        internal string GetAuthKey(NetPacket packet)
+        {
+            byte connectKeyLength = packet.RawData[9];
+            int authKeyStart = 10 + connectKeyLength;
+            int authKeyLength = packet.RawData.Length - authKeyStart;
+            if (authKeyLength <= 0)
+              return null;
+            return Encoding.UTF8.GetString(packet.RawData, authKeyStart, authKeyLength);
         }
 
         protected virtual void ProcessReceiveError(int socketErrorCode)

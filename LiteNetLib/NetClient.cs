@@ -16,11 +16,13 @@ namespace LiteNetLib
         private int _connectTimer;
         private ulong _connectId;
         private readonly string _connectKey;
+        private readonly string _authKey;
         private readonly object _connectionCloseLock = new object();
 
-        public NetClient(INetEventListener listener, string connectKey) : base(listener)
+        public NetClient(INetEventListener listener, string connectKey, string authKey = null) : base(listener)
         {
             _connectKey = connectKey;
+            _authKey = authKey;
         }
 
         public int Ping
@@ -134,15 +136,7 @@ namespace LiteNetLib
 
         private void SendConnectRequest()
         {
-            //Get connect key bytes
-            byte[] keyData = Encoding.UTF8.GetBytes(_connectKey);
-
-            //Make initial packet
-            var connectPacket = NetPacket.CreateRawPacket(PacketProperty.ConnectRequest, 8+keyData.Length);
-
-            //Add data
-            FastBitConverter.GetBytes(connectPacket, 1, _connectId);
-            Buffer.BlockCopy(keyData, 0, connectPacket, 9, keyData.Length);
+            var connectPacket = PrepareConnectPacket(_connectId, _connectKey, _authKey);
 
             //Send raw
             SendRaw(connectPacket, _peer.EndPoint);
@@ -225,11 +219,11 @@ namespace LiteNetLib
             {
                 NetUtils.DebugWrite(ConsoleColor.Cyan, "[NC] Received peer connect request");
 
-                string peerKey = Encoding.UTF8.GetString(packet.RawData, 9, packet.RawData.Length - 9);
-                if (peerKey != _connectKey)
+                string peerConnectKey = GetConnectKey(packet);
+                if (peerConnectKey != _connectKey)
                 {
-                    NetUtils.DebugWrite(ConsoleColor.Cyan, "[NC] Peer connect reject. Invalid key: " + peerKey);
-                    SendRejectPeer(packet, remoteEndPoint, ConnectRejectReason.BadConnectKey);
+                    NetUtils.DebugWrite(ConsoleColor.Cyan, "[NC] Peer connect reject. Invalid key: " + peerConnectKey);
+                    RejectPeer(packet, remoteEndPoint, ConnectRejectReason.BadConnectKey);
 
                     return;
                 }
